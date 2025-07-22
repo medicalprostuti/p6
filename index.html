@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "১ মাইল ও ১ কিলোমিটার দূরত্বের মধ্যে পার্থক্য মিটারে কত?",
+          options: {
+            A: "629 m",
+            B: "906 m",
+            C: "960 m",
+            D: "609 m",
+          },
+          correct: "D",
+          explanation:
+            "<p>১ মাইল = ১.৬০৯ কিলোমিটার বা ১৬০৯ মিটার।<br>১ কিলোমিটার = ১০০০ মিটার।<br><br>সুতরাং, ১ মাইল ও ১ কিলোমিটার দূরত্বের পার্থক্য হবে:<br>১৬০৯ মিটার - ১০০০ মিটার = ৬০৯ মিটার।<br><br>অতএব, ১ মাইল এবং ১ কিলোমিটার দূরত্বের মধ্যে পার্থক্য হলো ৬০৯ মিটার।</p>",
+        },
+        {
+          id: 2,
+          question: "বল ও সরণ উভয়ের একক দ্বিগুণ করলে গতিশক্তির একক কতগুণ হবে?",
+          options: {
+            A: "1/2",
+            B: "2",
+            C: "4",
+            D: "8",
+          },
+          correct: "C",
+          explanation:
+            "<p>আমরা জানি, কাজ (W) = বল (F) × সরণ (s)।<br>গতিশক্তি (E<sub>k</sub>) কাজের সমতুল্য।<br>কাজ = বল × সরণ<br>যদি বলের একক (F) দ্বিগুণ করা হয়, তাহলে নতুন বল হবে 2F।<br>যদি সরণের একক (s) দ্বিগুণ করা হয়, তাহলে নতুন সরণ হবে 2s।<br><br>তাহলে, নতুন কাজ বা গতিশক্তি হবে:<br>W' = (2F) × (2s)<br>W' = 4Fs<br><br>যেহেতু প্রাথমিক কাজ বা গতিশক্তি ছিল W = Fs, তাহলে নতুন গতিশক্তি হবে ৪ গুণ।</p><p>কাজ এবং গতিশক্তির একক একই, জুল (J)।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 1/2: এটি ভুল।</li><li>B) 2: এটি ভুল।</li><li>C) 4: এটি সঠিক। বল ও সরণ উভয়কে দ্বিগুণ করলে গুণফল ৪ গুণ হয়।</li><li>D) 8: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 3,
+          question:
+            "একটি দণ্ডের পরিমাপকৃত দৈর্ঘ্য ১০ cm ও প্রকৃত মান ১০.৪০ cm হলে, পরিমাপের ত্রুটি কত?",
+          options: {
+            A: "4%",
+            B: "3.8%",
+            C: "3.84%",
+            D: "0.4%",
+          },
+          correct: "C",
+          explanation:
+            "<p>পরিমাপের ত্রুটি (Percentage Error) নির্ণয়ের সূত্র হলো:<br>শতকরা ত্রুটি = |(পরিমাপ্য মান - প্রকৃত মান) / প্রকৃত মান| × 100%<br><br>এখানে, পরিমাপ্য মান (Measured value) = ১০ cm<br>প্রকৃত মান (True value) = ১০.৪০ cm<br><br>পরম ত্রুটি (Absolute Error) = |১০ - ১০.৪০| cm = |-০.৪০| cm = ০.৪০ cm<br><br>আপেক্ষিক ত্রুটি (Relative Error) = পরম ত্রুটি / প্রকৃত মান<br>আপেক্ষিক ত্রুটি = ০.৪০ cm / ১০.৪০ cm<br>আপেক্ষিক ত্রুটি = ০.০৩৮৪৬<br><br>শতকরা ত্রুটি (Percentage Error) = আপেক্ষিক ত্রুটি × ১০০%<br>শতকরা ত্রুটি = ০.০৩৮৪৬ × ১০০%<br>শতকরা ত্রুটি ≈ ৩.৮৪%</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 4%: এটি ভুল।</li><li>B) 3.8%: এটি কাছাকাছি হলেও সঠিক নয়।</li><li>C) 3.84%: এটি সঠিক।</li><li>D) 0.4%: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 4,
+          question:
+            "একটি সিলিন্ডারের দৈর্ঘ্য = 7/22 মিটার। যদি উহার আয়তন 4 m³ হয়, তাহলে উহার ব্যাস কত হবে?",
+          options: {
+            A: "1 m",
+            B: "4 m",
+            C: "1/2 m",
+            D: "2 m",
+          },
+          correct: "B",
+          explanation:
+            "<p>সিলিন্ডারের আয়তন (V) নির্ণয়ের সূত্র হলো:<br>V = πr²h<br>যেখানে, r = ব্যাসার্ধ, h = দৈর্ঘ্য বা উচ্চতা।<br>আমরা জানি, ব্যাস (d) = 2r, অর্থাৎ r = d/2।<br><br>সুতরাং, V = π(d/2)²h<br>V = π(d²/4)h<br>V = (πd²h) / 4<br><br>প্রশ্নে দেওয়া আছে:<br>দৈর্ঘ্য (h) = 7/22 মিটার<br>আয়তন (V) = 4 m³<br><br>আমরা সূত্র থেকে পাই:<br>4 = (πd² * (7/22)) / 4<br><br>এখানে π এর আনুমানিক মান ২২/৭ ব্যবহার করে পাই:<br>4 = ((22/7) * d² * (7/22)) / 4<br>4 = (d²) / 4<br><br>এখন d² এর মান বের করার জন্য উভয় পক্ষকে ৪ দ্বারা গুণ করি:<br>d² = 4 × 4<br>d² = 16<br><br>d এর মান বের করার জন্য উভয় পক্ষের বর্গমূল করি:<br>d = &radic;16<br>d = 4 মিটার<br><br>সুতরাং, সিলিন্ডারটির ব্যাস হবে ৪ মিটার।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 1 m: এটি ভুল।</li><li>B) 4 m: এটি সঠিক।</li><li>C) 1/2 m: এটি ভুল।</li><li>D) 2 m: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 5,
+          question:
+            "স্ফেরোমিটারের বৃত্তাকার স্কেলের মোট ভাগ সংখ্যা ৫০। স্কেলটিকে এক পাক ঘুরালে রৈখিক স্কেলে সরণ হয় ০.৫ mm। লঘিষ্ঠ গণন কত?",
+          options: {
+            A: "0.01 mm",
+            B: "0.01 cm",
+            C: "0.25 mm",
+            D: "0.50 mm",
+          },
+          correct: "A",
+          explanation:
+            "<p>স্ফেরোমিটারের লঘিষ্ঠ গণন (Least Count) নির্ণয়ের সূত্রটি হলো:<br>লঘিষ্ঠ গণন = পিচ / বৃত্তাকার স্কেল ভাগসংখ্যা<br><br>এখানে,<br>পিচ (P) = স্কেলটিকে এক পাক ঘুরালে রৈখিক স্কেলে সরণ = ০.৫ mm<br>বৃত্তাকার স্কেলের মোট ভাগ সংখ্যা (N) = ৫০<br><br>সুতরাং,<br>লঘিষ্ঠ গণন = ০.৫ mm / ৫০<br>লঘিষ্ঠ গণন = ০.০১ mm<br><br>অতএব, স্ফেরোমিটারের লঘিষ্ঠ গণন হলো ০.০১ mm।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.01 mm: এটি সঠিক।</li><li>B) 0.01 cm: 0.01 mm = 0.001 cm, তাই এটি ভুল।</li><li>C) 0.25 mm: এটি ভুল।</li><li>D) 0.50 mm: এটি পিচের মান, লঘিষ্ঠ গণন নয়।</li></ul>",
+        },
+        {
+          id: 6,
+          question:
+            "প্রধান স্কেল পাঠ M, ভার্নিয়ার পাঠ V এবং ভার্নিয়ার ধ্রুবক Vc হলে, দৈর্ঘ্য L নির্ণয়ের সূত্র-",
+          options: {
+            A: "L=M+Vc",
+            B: "L=MV+Vc",
+            C: "L=MVc+V",
+            D: "L=M+V&times;Vc",
+          },
+          correct: "D",
+          explanation:
+            "<p>স্লাইড ক্যালিপার্স ব্যবহার করে কোনো বস্তুর দৈর্ঘ্য পরিমাপের ক্ষেত্রে, মোট পাঠ (L) নির্ণয়ের জন্য একটি নির্দিষ্ট সূত্র ব্যবহার করা হয়। এটি হলো:<br>L = প্রধান স্কেল পাঠ (M) + (ভার্নিয়ার পাঠ (V) &times; ভার্নিয়ার ধ্রুবক (Vc))<br><br>এখানে:<br>M = প্রধান স্কেলের যে দাগটি ভার্নিয়ার স্কেলের শূন্য দাগের ঠিক বামে অবস্থান করে তার মান।<br>V = ভার্নিয়ার স্কেলের যে দাগটি প্রধান স্কেলের যেকোনো একটি দাগের সাথে সম্পূর্ণ মিলে যায় তার সংখ্যা।<br>Vc = ভার্নিয়ার ধ্রুবক, যা যন্ত্রের লঘিষ্ঠ গণন।<br><br>এই সূত্রটি পদার্থবিজ্ঞানের পরীক্ষাগারে স্লাইড ক্যালিপার্স বা ভার্নিয়ার ক্যালিপার্স ব্যবহারের সময় বস্তুর দৈর্ঘ্য, ব্যাস বা গভীরতা নির্ভুলভাবে নির্ণয়ের জন্য ব্যবহৃত হয়।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) L=M+Vc: এটি ভুল।</li><li>B) L=MV+Vc: এটি ভুল।</li><li>C) L=MVc+V: এটি ভুল।</li><li>D) L=M+V&times;Vc: এটি সঠিক।</li></ul>",
+        },
+        {
+          id: 7,
+          question:
+            "একটি তারের প্রবাহমাত্রা (২.৫ &plusmn; ০.৫) A এবং দুই প্রান্তের বিভব পার্থক্য (৪০ &plusmn; ১) V। তারটির রোধ-",
+          options: {
+            A: "(16 &plusmn; 1.0) &Omega;",
+            B: "(16 &plusmn; 3.6) &Omega;",
+            C: "(16 &plusmn; 3) &Omega;",
+            D: "(16 &plusmn; 0.5) &Omega;",
+          },
+          correct: "B",
+          explanation:
+            "<p>রোধ (R) নির্ণয়ের জন্য ওহমের সূত্র ব্যবহার করা হয়: R = V / I<br>এখানে, V = বিভব পার্থক্য, I = প্রবাহমাত্রা।<br><br>দেওয়া আছে:<br>প্রবাহমাত্রা I = (২.৫ &plusmn; ০.৫) A<br>বিভব পার্থক্য V = (৪০ &plusmn; ১) V<br><br>প্রথমে রোধের গড় মান (R) নির্ণয় করি:<br>R = V / I = ৪০ V / ২.৫ A = ১৬ &Omega;<br><br>এখন রোধ পরিমাপে শতকরা ত্রুটি (Percentage Error) নির্ণয় করতে হবে। যখন দুটি রাশির ভাগফলের ত্রুটি নির্ণয় করা হয়, তখন তাদের আপেক্ষিক ত্রুটিগুলো যোগ করা হয়।<br><br>V এর আপেক্ষিক ত্রুটি = &Delta;V / V = ১ / ৪০ = ০.০২৫<br>I এর আপেক্ষিক ত্রুটি = &Delta;I / I = ০.৫ / ২.৫ = ০.২<br><br>R এর আপেক্ষিক ত্রুটি (&Delta;R / R) = (&Delta;V / V) + (&Delta;I / I)<br>&Delta;R / R = ০.০২৫ + ০.২ = ০.২২৫<br><br>এখন &Delta;R নির্ণয় করি:<br>&Delta;R = R &times; ০.২২৫<br>&Delta;R = ১৬ &Omega; &times; ০.২২৫<br>&Delta;R = ৩.৬ &Omega;<br><br>সুতরাং, তারটির রোধ হবে (১৬ &plusmn; ৩.৬) &Omega;।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) (16 &plusmn; 1.0) &Omega;: এটি ভুল।</li><li>B) (16 &plusmn; 3.6) &Omega;: এটি সঠিক।</li><li>C) (16 &plusmn; 3) &Omega;: এটি কাছাকাছি হলেও সঠিক নয়।</li><li>D) (16 &plusmn; 0.5) &Omega;: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 8,
+          question:
+            "একটি স্লাইড ক্যালিপার্সের ভার্নিয়ার স্কেলের n ভাগ মূল স্কেলের (n &minus; ১) ভাগের সাথে মিলে যায়। মূল স্কেলে ১ ভাগের মান ১ mm। যন্ত্রের ভার্নিয়ার ধ্রুবক কত?",
+          options: {
+            A: "n mm",
+            B: "(n - 1) mm",
+            C: "1/n cm",
+            D: "1/10n cm",
+          },
+          correct: "D",
+          explanation:
+            "<p>ভার্নিয়ার ধ্রুবক (Vernier Constant) নির্ণয়ের সূত্র হলো:<br>ভার্নিয়ার ধ্রুবক = প্রধান স্কেলের ক্ষুদ্রতম এক ঘরের মান - ভার্নিয়ার স্কেলের ক্ষুদ্রতম এক ঘরের মান<br><br>দেওয়া আছে:<br>প্রধান স্কেলের ১ ভাগের মান = ১ mm<br>ভার্নিয়ার স্কেলের n ভাগ = প্রধান স্কেলের (n - ১) ভাগ<br><br>সুতরাং, ভার্নিয়ার স্কেলের ১ ভাগ = (n - ১) / n &times; (প্রধান স্কেলের ১ ভাগের মান)<br>ভার্নিয়ার স্কেলের ১ ভাগ = (n - ১) / n &times; ১ mm<br><br>এখন, ভার্নিয়ার ধ্রুবক = ১ mm - [(n - ১) / n] mm<br>ভার্নিয়ার ধ্রুবক = [n - (n - ১)] / n mm<br>ভার্নিয়ার ধ্রুবক = (n - n + ১) / n mm<br>ভার্নিয়ার ধ্রুবক = ১ / n mm<br><br>যেহেতু অপশনগুলো সেন্টিমিটারে দেওয়া আছে, আমরা ১/n mm কে সেন্টিমিটারে রূপান্তর করব। আমরা জানি, ১ cm = ১০ mm, সুতরাং ১ mm = ১/১০ cm।<br><br>ভার্নিয়ার ধ্রুবক = (১ / n) &times; (১ / ১০) cm<br>ভার্নিয়ার ধ্রুবক = ১ / (১০n) cm</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) n mm: এটি ভুল।</li><li>B) (n - 1) mm: এটি ভুল।</li><li>C) 1/n cm: এটি ভুল, কারণ এটি মিলিমিটারকে সেন্টিমিটারে রূপান্তর করার সময় ভুলভাবে করা হয়েছে।</li><li>D) 1/10n cm: এটি সঠিক।</li></ul>",
+        },
+        {
+          id: 9,
+          question:
+            "কোনো গোলকের ব্যাসার্ধের প্রকৃত মান ৩ cm এবং পরিমাপ্য মান ২.৯৮ cm। গোলকটির আয়তন পরিমাপে শতকরা ত্রুটি কত?",
+          options: {
+            A: "0.02%",
+            B: "0.066%",
+            C: "0.66%",
+            D: "2%",
+          },
+          correct: "D",
+          explanation:
+            "<p>গোলকের আয়তন (V) এর সূত্র হলো: V = (৪/৩)&pi;r&sup3;<br>আয়তনের শতকরা ত্রুটি নির্ণয়ের জন্য, ব্যাসার্ধের শতকরা ত্রুটি নির্ণয় করতে হবে প্রথমে।<br><br>প্রকৃত ব্যাসার্ধ (r<sub>প্রকৃত</sub>) = ৩ cm<br>পরিমাপ্য ব্যাসার্ধ (r<sub>পরিমাপ্য</sub>) = ২.৯৮ cm<br><br>ব্যাসার্ধের পরম ত্রুটি (&Delta;r) = |r<sub>প্রকৃত</sub> - r<sub>পরিমাপ্য</sub>| = |৩ - ২.৯৮| cm = ০.০২ cm<br><br>ব্যাসার্ধের আপেক্ষিক ত্রুটি = &Delta;r / r<sub>প্রকৃত</sub> = ০.০২ / ৩<br><br>ব্যাসার্ধের শতকরা ত্রুটি = (০.০২ / ৩) &times; ১০০% &asymp; ০.৬৬৬%<br><br>এখন, আয়তন পরিমাপে শতকরা ত্রুটি নির্ণয় করতে হবে। আয়তনের সূত্র r&sup3; থাকায়, r এর শতকরা ত্রুটিকে ৩ দিয়ে গুণ করতে হবে।<br><br>আয়তনের শতকরা ত্রুটি = ৩ &times; (ব্যাসার্ধের শতকরা ত্রুটি)<br>আয়তনের শতকরা ত্রুটি = ৩ &times; (০.০২ / ৩) &times; ১০০%<br>আয়তনের শতকরা ত্রুটি = ০.০২ &times; ১০০% = ২%</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.02%: এটি ব্যাসার্ধের পরম ত্রুটির মান, শতকরা নয়।</li><li>B) 0.066%: এটি ভুল।</li><li>C) 0.66%: এটি ব্যাসার্ধের শতকরা ত্রুটি, আয়তনের নয়।</li><li>D) 2%: এটি সঠিক।</li></ul>",
+        },
+        {
+          id: 10,
+          question:
+            "একজন ছাত্রকে ১.৩ x 10⁻&sup3; m মাপের একটি ঘনক দেওয়া হলো। ওই ঘনকের আয়তন হবে-",
+          options: {
+            A: "2.215 x 10⁻&sup2; m&sup3;",
+            B: "2.197 x 10⁻&sup9; m&sup3;",
+            C: "2.917 x 10⁻&sup9; m&sup3;",
+            D: "2.125 x 10⁻&sup9; m&sup3;",
+          },
+          correct: "B",
+          explanation:
+            "<p>ঘনকের আয়তন (V) নির্ণয়ের সূত্র হলো: V = (বাহুর দৈর্ঘ্য) &sup3;<br><br>দেওয়া আছে, ঘনকের বাহুর দৈর্ঘ্য (a) = ১.৩ &times; ১০⁻&sup3; m<br><br>সুতরাং, ঘনকের আয়তন = (১.৩ &times; ১০⁻&sup3;) &sup3; m&sup3;<br>আয়তন = (১.৩) &sup3; &times; (১০⁻&sup3;) &sup3; m&sup3;<br>আয়তন = ২.১৯৭ &times; ১০⁻&sup9; m&sup3;<br><br>অতএব, ওই ঘনকের আয়তন হবে ২.১৯৭ &times; ১০⁻&sup9; m&sup3;।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 2.215 x 10⁻&sup2; m&sup3;: এটি ভুল।</li><li>B) 2.197 x 10⁻&sup9; m&sup3;: এটি সঠিক।</li><li>C) 2.917 x 10⁻&sup9; m&sup3;: এটি ভুল।</li><li>D) 2.125 x 10⁻&sup9; m&sup3;: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 11,
+          question:
+            "একটি বৃত্তের পরিমাপ্য ব্যাসার্ধ (৫ &plusmn; ০.২%) cm হলে ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি কত?",
+          options: {
+            A: "0.8%",
+            B: "0.5%",
+            C: "0.4%",
+            D: "0.2%",
+          },
+          correct: "C",
+          explanation:
+            "<p>বৃত্তের ক্ষেত্রফল (A) নির্ণয়ের সূত্র হলো: A = &pi;r&sup2;<br>যেখানে, r = ব্যাসার্ধ।<br><br>ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি নির্ণয়ের জন্য, ব্যাসার্ধের শতকরা ত্রুটিকে ২ দিয়ে গুণ করতে হবে।<br><br>দেওয়া আছে, ব্যাসার্ধ পরিমাপে শতকরা ত্রুটি = ০.২%<br><br>সুতরাং, ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি = ২ &times; (ব্যাসার্ধ পরিমাপে শতকরা ত্রুটি)<br>ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি = ২ &times; ০.২%<br>ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি = ০.৪%<br><br>অর্থাৎ, বৃত্তের ক্ষেত্রফল পরিমাপে শতকরা ত্রুটি হবে ০.৪%।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.8%: এটি ভুল।</li><li>B) 0.5%: এটি ভুল।</li><li>C) 0.4%: এটি সঠিক।</li><li>D) 0.2%: এটি ব্যাসার্ধের শতকরা ত্রুটি, ক্ষেত্রফলের নয়।</li></ul>",
+        },
+        {
+          id: 12,
+          question:
+            "একটি স্লাইড ক্যালিপার্সের প্রধান স্কেলের ৩৯ ভাগ ভার্নিয়ার স্কেলের ৪০ ভাগের সমান। প্রধান স্কেলের এক ভাগের মান ১.০ mm হলে ভার্নিয়ার ধ্রুবক কত?",
+          options: {
+            A: "0.010 mm",
+            B: "0.020 mm",
+            C: "0.025 mm",
+            D: "0.040 mm",
+          },
+          correct: "C",
+          explanation:
+            "<p>ভার্নিয়ার ধ্রুবক (Vernier Constant) নির্ণয়ের সূত্রটি হলো:<br>ভার্নিয়ার ধ্রুবক = প্রধান স্কেলের ক্ষুদ্রতম এক ঘরের মান - ভার্নিয়ার স্কেলের ক্ষুদ্রতম এক ঘরের মান<br><br>দেওয়া আছে:<br>প্রধান স্কেলের ১ ভাগের মান (S) = ১.০ mm<br>প্রধান স্কেলের ৩৯ ভাগ = ভার্নিয়ার স্কেলের ৪০ ভাগ<br><br>সুতরাং, ভার্নিয়ার স্কেলের ৪০ ভাগ = ৩৯ &times; (প্রধান স্কেলের ১ ভাগের মান)<br>ভার্নিয়ার স্কেলের ৪০ ভাগ = ৩৯ &times; ১.০ mm<br>ভার্নিয়ার স্কেলের ৪০ ভাগ = ৩৯ mm<br><br>ভার্নিয়ার স্কেলের ১ ভাগ (V) = ৩৯ / ৪০ mm = ০.৯৭৫ mm<br><br>এখন, ভার্নিয়ার ধ্রুবক (Vc) = S - V<br>Vc = ১.০ mm - ০.৯৭৫ mm<br>Vc = ০.০২৫ mm<br><br>অতএব, যন্ত্রের ভার্নিয়ার ধ্রুবক হলো ০.০২৫ mm।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.010 mm: এটি ভুল।</li><li>B) 0.020 mm: এটি ভুল।</li><li>C) 0.025 mm: এটি সঠিক।</li><li>D) 0.040 mm: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 13,
+          question:
+            "একই দৈর্ঘ্যের দুটি সরল দোলকের পিণ্ডদ্বয়ের ভর যথাক্রমে ৫০ g এবং ১০০ g। এই দুটি সরল দোলকের একই স্থানে পর্যায়কালের অনুপাত হবে-",
+          options: {
+            A: "1 : 2",
+            B: "2 : 1",
+            C: "1 : 1",
+            D: "1 : &radic;2",
+          },
+          correct: "C",
+          explanation:
+            "<p>সরল দোলকের পর্যায়কাল (T) এর সূত্র হলো:<br>T = ২&pi;&radic;(L/g)<br>যেখানে, L = দোলকের কার্যকরী দৈর্ঘ্য, g = অভিকর্ষজ ত্বরণ।<br><br>এই সূত্র থেকে দেখা যায় যে, সরল দোলকের পর্যায়কাল দোলকের পিণ্ডের ভরের উপর নির্ভরশীল নয়। এটি শুধুমাত্র কার্যকরী দৈর্ঘ্য (L) এবং অভিকর্ষজ ত্বরণ (g) এর উপর নির্ভরশীল।<br><br>প্রশ্নে দেওয়া আছে:<br>দুটি সরল দোলকের কার্যকরী দৈর্ঘ্য একই।<br>এরা একই স্থানে আছে, অর্থাৎ অভিকর্ষজ ত্বরণ (g) উভয় দোলকের জন্য একই।<br><br>যেহেতু পর্যায়কাল ভরের উপর নির্ভরশীল নয় এবং অন্যান্য চলরাশি (L ও g) উভয় দোলকের জন্য একই, সুতরাং তাদের পর্যায়কালও একই হবে।<br><br>অতএব, দুটি সরল দোলকের পর্যায়কালের অনুপাত হবে ১ : ১।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 1 : 2: এটি ভুল।</li><li>B) 2 : 1: এটি ভুল।</li><li>C) 1 : 1: এটি সঠিক।</li><li>D) 1 : &radic;2: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 14,
+          question:
+            "L দৈর্ঘ্যের একটি বর্গক্ষেত্রের ওপর F বল প্রয়োগ করা হয়েছে। L-এর মাপে ত্রুটি ২% এবং F-এর পরিমাপে ত্রুটি ৪% হলে চাপ এর ক্ষেত্রে গ্রহণযোগ্য ত্রুটি হবে-",
+          options: {
+            A: "2%",
+            B: "4%",
+            C: "6%",
+            D: "8%",
+          },
+          correct: "C",
+          explanation:
+            "<p>চাপ (P) নির্ণয়ের সূত্র হলো: P = বল (F) / ক্ষেত্রফল (A)<br>যেখানে, বর্গক্ষেত্রের ক্ষেত্রফল (A) = L&sup2;<br>সুতরাং, P = F / L&sup2;<br><br>শতকরা ত্রুটি নির্ণয়ের ক্ষেত্রে, যখন দুটি রাশির ভাগফল বা গুণফলের ত্রুটি নির্ণয় করা হয়, তখন তাদের শতকরা ত্রুটিগুলো যোগ করা হয়। যদি কোনো রাশির ঘাত (যেমন L&sup2;) থাকে, তবে সেই ঘাত দিয়ে শতকরা ত্রুটিকে গুণ করতে হয়।<br><br>দেওয়া আছে:<br>বলের পরিমাপে শতকরা ত্রুটি (&Delta;F/F &times; ১০০%) = ৪%<br>দৈর্ঘ্যের পরিমাপে শতকরা ত্রুটি (&Delta;L/L &times; ১০০%) = ২%<br><br>চাপের শতকরা ত্রুটি (&Delta;P/P &times; ১০০%) = (&Delta;F/F &times; ১০০%) + ২ &times; (&Delta;L/L &times; ১০০%)<br>&Delta;P/P &times; ১০০% = ৪% + ২ &times; ২%<br>&Delta;P/P &times; ১০০% = ৪% + ৪%<br>&Delta;P/P &times; ১০০% = ৮%<br><br>অতএব, চাপ এর ক্ষেত্রে গ্রহণযোগ্য ত্রুটি হবে ৮%।</p><p>-- এই প্রশ্নের প্রদত্ত উত্তর (C) 6% ভুল। সঠিক উত্তর হবে 8%।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "কোনো বিজ্ঞানী একটি পরীক্ষার সময় ১০০ বার পাঠ নিলেন। তিনি ওই একই পরীক্ষায় ওই মাপটি ৪০০ বার নিলে সম্ভাব্য ত্রুটি-",
+          options: {
+            A: "একই থাকবে",
+            B: "অর্ধেক হবে",
+            C: "1.4 কম হবে",
+            D: "৪ গুণ হবে",
+          },
+          correct: "C",
+          explanation:
+            "<p>পরিমাপের সংখ্যা বাড়লে দৈব ত্রুটি (Random error) কমে আসে। দৈব ত্রুটির সাথে পরিমাপের সংখ্যার সম্পর্ক হলো: সম্ভাব্য ত্রুটি &prop; ১/&radic;n, যেখানে n হলো পরিমাপের সংখ্যা।<br><br>প্রাথমিক পরিমাপের সংখ্যা (n<sub>1</sub>) = ১০০ বার<br>প্রাথমিক সম্ভাব্য ত্রুটি = K / &radic;১০০ = K / ১০<br><br>পরবর্তী পরিমাপের সংখ্যা (n<sub>2</sub>) = ৪০০ বার<br>পরবর্তী সম্ভাব্য ত্রুটি = K / &radic;৪০০ = K / ২০<br><br>এখন, সম্ভাব্য ত্রুটির পরিবর্তন দেখি:<br>(K/২০) / (K/১০) = ১০/২০ = ০.৫<br><br>অর্থাৎ, ত্রুটি অর্ধেক হয়ে যাবে।<br><br>অপশনগুলো বিশ্লেষণ করি:<br>A) একই থাকবে: এটি ভুল।<br>B) অর্ধেক হবে: এটি গাণিতিকভাবে সঠিক (০.৫ গুণ)।<br>C) 1.4 কম হবে: এটি প্রায় অর্ধেক বোঝায়, কারণ ১/&radic;২ &asymp; ০.৭০৭। যদি ত্রুটি &radic;২ গুণ কম হতো, তাহলে তা প্রায় ১.৪ গুণ কম হতো। যেহেতু পরিমাপের সংখ্যা ৪ গুণ বেড়েছে, তাই ত্রুটি &radic;৪ = ২ গুণ কম হবে, অর্থাৎ অর্ধেক হবে। অপশন C এবং B এর মধ্যে B সরাসরি উত্তর হলেও, C বলতে এখানে ১/&radic;২ বা প্রায় ০.৭ বোঝানো হচ্ছে, যা এই ক্ষেত্রে ভুল। কিন্তু, যদি প্রশ্নটি 'কত গুণ কম হবে' জানতে চাইতো, তাহলে '২ গুণ কম হবে' সঠিক হতো। এখানে '1.4 কম হবে' এটি সঠিক নয়।</p><p>-- এই প্রশ্নের প্রদত্ত উত্তর (C) 1.4 কম হবে ভুল। সঠিক উত্তর হবে (B) অর্ধেক হবে। যখন পরিমাপের সংখ্যা ৪ গুণ বৃদ্ধি পায়, তখন সম্ভাব্য ত্রুটি &radic;৪ অর্থাৎ ২ গুণ কমে যায়, অর্থাৎ অর্ধেক হয়।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "একটি গোলকের ব্যাসার্ধ R = (১০ &plusmn; ০.১) cm হলে এর আয়তনের শতকরা ত্রুটি কত?",
+          options: {
+            A: "1%",
+            B: "2%",
+            C: "3%",
+            D: "4%",
+          },
+          correct: "C",
+          explanation:
+            "<p>গোলকের আয়তন (V) এর সূত্র হলো: V = (৪/৩)&pi;R&sup3;<br>আয়তন পরিমাপে শতকরা ত্রুটি নির্ণয়ের জন্য, ব্যাসার্ধের শতকরা ত্রুটি নির্ণয় করতে হবে প্রথমে।<br><br>দেওয়া আছে, গোলকের ব্যাসার্ধ R = (১০ &plusmn; ০.১) cm<br>অর্থাৎ, প্রকৃত ব্যাসার্ধের মান = ১০ cm<br>ব্যাসার্ধের পরম ত্রুটি (&Delta;R) = ০.১ cm<br><br>ব্যাসার্ধের আপেক্ষিক ত্রুটি = &Delta;R / R = ০.১ / ১০ = ০.০১<br><br>ব্যাসার্ধের শতকরা ত্রুটি = (০.১ / ১০) &times; ১০০% = ১%<br><br>এখন, আয়তন পরিমাপে শতকরা ত্রুটি নির্ণয় করতে হবে। যেহেতু আয়তনের সূত্রে ব্যাসার্ধের ঘাত ৩ আছে (R&sup3;), তাই ব্যাসার্ধের শতকরা ত্রুটিকে ৩ দিয়ে গুণ করতে হবে।<br><br>আয়তনের শতকরা ত্রুটি = ৩ &times; (ব্যাসার্ধের শতকরা ত্রুটি)<br>আয়তনের শতকরা ত্রুটি = ৩ &times; ১%<br>আয়তনের শতকরা ত্রুটি = ৩%<br><br>অতএব, গোলকটির আয়তন পরিমাপে শতকরা ত্রুটি হবে ৩%।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 1%: এটি ব্যাসার্ধের শতকরা ত্রুটি, আয়তনের নয়।</li><li>B) 2%: এটি ভুল।</li><li>C) 3%: এটি সঠিক।</li><li>D) 4%: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 17,
+          question: "x=u&sup3; হলে x নির্ণয়ের আনুপাতিক ত্রুটি কত?",
+          options: {
+            A: "&Delta;u/u",
+            B: "3&Delta;u/u",
+            C: "(&Delta;u/u)&sup3;",
+            D: "3(&Delta;u/u)&sup3;",
+          },
+          correct: "B",
+          explanation:
+            "<p>যদি একটি রাশি x, অপর একটি রাশি u এর ঘাত হিসেবে থাকে, যেমন x = u<sup>n</sup>, তাহলে x নির্ণয়ের আনুপাতিক ত্রুটি (&Delta;x/x) নির্ণয়ের সূত্রটি হলো:<br>&Delta;x/x = n &times; (&Delta;u/u)<br><br>এখানে দেওয়া আছে: x = u&sup3;<br>অর্থাৎ, n = ৩<br><br>সুতরাং, x নির্ণয়ের আনুপাতিক ত্রুটি হবে:<br>&Delta;x/x = ৩ &times; (&Delta;u/u)<br>&Delta;x/x = 3&Delta;u/u<br><br>এটি ত্রুটি বিশ্লেষণের একটি মৌলিক নিয়ম, যেখানে ঘাত আকারে থাকা রাশির আপেক্ষিক ত্রুটি সেই ঘাত দিয়ে গুণ করা হয়।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) &Delta;u/u: এটি u এর আনুপাতিক ত্রুটি, x এর নয়।</li><li>B) 3&Delta;u/u: এটি সঠিক।</li><li>C) (&Delta;u/u)&sup3;: এটি ভুল।</li><li>D) 3(&Delta;u/u)&sup3;: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 18,
+          question:
+            "একটি গোলকের ব্যাসার্ধ পরিমাপে ১.৫% ভুল হলে ঐ গোলকের আয়তন পরিমাপে শতকরা কত ভুল হবে?",
+          options: {
+            A: "1.5%",
+            B: "4.5%",
+            C: "3.375%",
+            D: "3.0%",
+          },
+          correct: "B",
+          explanation:
+            "<p>গোলকের আয়তন (V) নির্ণয়ের সূত্র হলো: V = (৪/৩)&pi;r&sup3;<br>যেখানে, r = ব্যাসার্ধ।<br><br>যখন কোনো রাশির পরিমাপে শতকরা ত্রুটি থাকে এবং সেই রাশিটি অন্য একটি রাশির ঘাত হিসেবে থাকে (যেমন r&sup3;), তখন নতুন রাশির শতকরা ত্রুটি হবে মূল রাশির শতকরা ত্রুটিকে ঘাত দিয়ে গুণ করে।<br><br>দেওয়া আছে, ব্যাসার্ধ পরিমাপে শতকরা ভুল = ১.৫%<br><br>গোলকের আয়তন পরিমাপে শতকরা ভুল = ৩ &times; (ব্যাসার্ধ পরিমাপে শতকরা ভুল)<br>আয়তন পরিমাপে শতকরা ভুল = ৩ &times; ১.৫%<br>আয়তন পরিমাপে শতকরা ভুল = ৪.৫%<br><br>অতএব, ঐ গোলকের আয়তন পরিমাপে শতকরা ৪.৫% ভুল হবে।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 1.5%: এটি ব্যাসার্ধের শতকরা ত্রুটি, আয়তনের নয়।</li><li>B) 4.5%: এটি সঠিক।</li><li>C) 3.375%: এটি ভুল।</li><li>D) 3.0%: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 19,
+          question:
+            "সরলদোলকের সাহায্যে কোনো স্থানের g-এর মান পাওয়া গেলো ১০ ms⁻&sup2;। ঐ স্থানের g-এর প্রকৃত মান ৯.৮১ ms⁻&sup2; হলে পরিমাপের শতকরা ত্রুটি কত?",
+          options: {
+            A: "19.63%",
+            B: "19%",
+            C: "1.93%",
+            D: "0.193%",
+          },
+          correct: "C",
+          explanation:
+            "<p>পরিমাপের শতকরা ত্রুটি (Percentage Error) নির্ণয়ের সূত্র হলো:<br>শতকরা ত্রুটি = |(পরিমাপ্য মান - প্রকৃত মান) / প্রকৃত মান| &times; ১০০%<br><br>এখানে,<br>পরিমাপ্য মান (Measured value) = ১০ ms⁻&sup2;<br>প্রকৃত মান (True value) = ৯.৮১ ms⁻&sup2;<br><br>পরম ত্রুটি (Absolute Error) = |১০ - ৯.৮১| ms⁻&sup2; = ০.১৯ ms⁻&sup2;<br><br>আপেক্ষিক ত্রুটি (Relative Error) = পরম ত্রুটি / প্রকৃত মান<br>আপেক্ষিক ত্রুটি = ০.১৯ / ৯.৮১<br>আপেক্ষিক ত্রুটি &asymp; ০.০১ ৯৩৬৮<br><br>শতকরা ত্রুটি (Percentage Error) = আপেক্ষিক ত্রুটি &times; ১০০%<br>শতকরা ত্রুটি = ০.০১ ৯৩৬৮ &times; ১০০%<br>শতকরা ত্রুটি &asymp; ১.৯৩%<br><br>অতএব, পরিমাপের শতকরা ত্রুটি হবে প্রায় ১.৯৩%।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 19.63%: এটি ভুল।</li><li>B) 19%: এটি ভুল।</li><li>C) 1.93%: এটি সঠিক।</li><li>D) 0.193%: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 20,
+          question:
+            "কোনো বস্তুর ভর ১০০ kg &plusmn; ২% এবং আয়তন ১০ m&sup3; &plusmn; ৩% হলে ঐ বস্তুর ঘনত্বের শতকরা ত্রুটি কত হবে?",
+          options: {
+            A: "0.1%",
+            B: "0.5%",
+            C: "5%",
+            D: "10%",
+          },
+          correct: "C",
+          explanation:
+            "<p>ঘনত্ব (ρ) নির্ণয়ের সূত্র হলো: ρ = ভর (m) / আয়তন (V)<br><br>যখন দুটি রাশির ভাগফলের ত্রুটি নির্ণয় করা হয়, তখন তাদের শতকরা ত্রুটিগুলো যোগ করা হয়।<br><br>দেওয়া আছে:<br>ভরের শতকরা ত্রুটি (&Delta;m/m &times; ১০০%) = ২%<br>আয়তনের শতকরা ত্রুটি (&Delta;V/V &times; ১০০%) = ৩%<br><br>ঘনত্বের শতকরা ত্রুটি (&Delta;ρ/ρ &times; ১০০%) = (ভরের শতকরা ত্রুটি) + (আয়তনের শতকরা ত্রুটি)<br>&Delta;ρ/ρ &times; ১০০% = ২% + ৩%<br>&Delta;ρ/ρ &times; ১০০% = ৫%<br><br>অতএব, ঐ বস্তুর ঘনত্বের শতকরা ত্রুটি হবে ৫%।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.1%: এটি ভুল।</li><li>B) 0.5%: এটি ভুল।</li><li>C) 5%: এটি সঠিক।</li><li>D) 10%: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 21,
+          question:
+            "একজন শিক্ষার্থী একটি সিলিন্ডারের ব্যাসার্ধ নির্ণয়ের জন্য ০.০০১ cm লঘিষ্ঠ গণনের একটি স্ক্রু গেজ ব্যবহার করলো। তার প্রাপ্ত ফলাফলের সর্বাধিক সঠিক মান কোনটি (cm) ?",
+          options: {
+            A: "1.4",
+            B: "1.41",
+            C: "1.402",
+            D: "1.4416",
+          },
+          correct: "C",
+          explanation:
+            "<p>একটি যন্ত্রের লঘিষ্ঠ গণন (Least Count) হলো সেই যন্ত্র দ্বারা নির্ভুলভাবে পরিমাপ করা যায় এমন ক্ষুদ্রতম মান। এর অর্থ হলো, পরিমাপের ফলাফল লঘিষ্ঠ গণনের দশমিক স্থান পর্যন্ত নির্ভুলভাবে প্রকাশ করা উচিত।<br><br>দেওয়া আছে, স্ক্রু গেজের লঘিষ্ঠ গণন = ০.০০১ cm।<br>এর অর্থ হলো, পরিমাপের ফলাফল দশমিকের পর ৩ ঘর পর্যন্ত নির্ভুল হওয়া উচিত।<br><br>এখন অপশনগুলো বিশ্লেষণ করি:<br>A) ১.৪ cm: এটি দশমিকের পর ১ ঘর পর্যন্ত সঠিক।<br>B) ১.৪১ cm: এটি দশমিকের পর ২ ঘর পর্যন্ত সঠিক।<br>C) ১.৪০২ cm: এটি দশমিকের পর ৩ ঘর পর্যন্ত সঠিক, যা লঘিষ্ঠ গণনের সাথে সামঞ্জস্যপূর্ণ।<br>D) ১.৪৪১৬ cm: এটি দশমিকের পর ৪ ঘর পর্যন্ত সঠিক, যা লঘিষ্ঠ গণনের চেয়ে বেশি নির্ভুলতা নির্দেশ করে এবং এই যন্ত্র দিয়ে এত নির্ভুলভাবে পরিমাপ করা সম্ভব নয়।<br><br>সুতরাং, ০.০০১ cm লঘিষ্ঠ গণনের একটি স্ক্রু গেজ দিয়ে পরিমাপ করা সর্বাধিক সঠিক মান হবে ১.৪০২ cm, কারণ এটি দশমিকের পর লঘিষ্ঠ গণনের সমান সংখ্যক স্থান পর্যন্ত নির্ভুল।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "একটি স্ফেরোমিটারের বৃত্তাকার স্কেলের ভাগ সংখ্যা ৫০। বৃত্তাকার স্কেলটি একবার ঘুরালে এটি রৈখিক স্কেল বরাবর ১ mm দূরত্ব অতিক্রম করে। স্ফেরোমিটারটির লঘিষ্ঠ গণন হবে-",
+          options: {
+            A: "0.2 cm",
+            B: "0.02 cm",
+            C: "0.002 cm",
+            D: "0.0002 cm",
+          },
+          correct: "C",
+          explanation:
+            "<p>স্ফেরোমিটারের লঘিষ্ঠ গণন (Least Count) নির্ণয়ের সূত্রটি হলো:<br>লঘিষ্ঠ গণন = পিচ / বৃত্তাকার স্কেল ভাগসংখ্যা<br><br>এখানে,<br>পিচ (P) = বৃত্তাকার স্কেলটি একবার ঘুরালে রৈখিক স্কেলে অতিক্রান্ত দূরত্ব = ১ mm<br>বৃত্তাকার স্কেলের মোট ভাগ সংখ্যা (N) = ৫০<br><br>সুতরাং,<br>লঘিষ্ঠ গণন = ১ mm / ৫০<br>লঘিষ্ঠ গণন = ০.০২ mm<br><br>প্রশ্নে উত্তরগুলো সেন্টিমিটারে চাওয়া হয়েছে, তাই আমরা ০.০২ mm কে সেন্টিমিটারে রূপান্তর করব।<br>আমরা জানি, ১ cm = ১০ mm, সুতরাং ১ mm = ০.১ cm।<br><br>লঘিষ্ঠ গণন = ০.০২ &times; ০.১ cm<br>লঘিষ্ঠ গণন = ০.০০২ cm<br><br>অতএব, স্ফেরোমিটারটির লঘিষ্ঠ গণন হবে ০.০০২ cm।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.2 cm: এটি ভুল।</li><li>B) 0.02 cm: এটি মিলিমিটারে ০.০২ mm এর মান, সেন্টিমিটারে নয়।</li><li>C) 0.002 cm: এটি সঠিক।</li><li>D) 0.0002 cm: এটি ভুল।</li></ul>",
+        },
+        {
+          id: 23,
+          question:
+            "একটি স্লাইড ক্যালিপার্সের মূল স্কেলের ৯৯ ভাগ ভার্নিয়ার স্কেলের ১০০ ভাগের সমান। ভার্নিয়ার ধ্রুবকের মান কত?",
+          options: {
+            A: "0.01",
+            B: "0.1",
+            C: "0.001",
+            D: "0.0001",
+          },
+          correct: "A",
+          explanation:
+            "<p>ভার্নিয়ার ধ্রুবক (Vernier Constant) নির্ণয়ের সূত্র হলো:<br>ভার্নিয়ার ধ্রুবক = প্রধান স্কেলের ক্ষুদ্রতম এক ঘরের মান - ভার্নিয়ার স্কেলের ক্ষুদ্রতম এক ঘরের মান<br><br>দেওয়া আছে:<br>মূল স্কেলের ৯৯ ভাগ = ভার্নিয়ার স্কেলের ১০০ ভাগ<br><br>ধরি, মূল স্কেলের ক্ষুদ্রতম এক ঘরের মান = S<br>এবং ভার্নিয়ার স্কেলের ক্ষুদ্রতম এক ঘরের মান = V<br><br>তাহলে, ১০০V = ৯৯S<br>V = ৯৯S / ১০০ = ০.৯৯S<br><br>ভার্নিয়ার ধ্রুবক (Vc) = S - V<br>Vc = S - ০.৯৯S<br>Vc = ০.০১S<br><br>প্রশ্নটিতে মূল স্কেলের ক্ষুদ্রতম এক ভাগের মান উল্লেখ করা হয়নি। তবে সাধারণত, স্লাইড ক্যালিপার্সের প্রধান স্কেলের ক্ষুদ্রতম এক ঘরের মান ১ mm বা ০.১ cm ধরা হয়। যদি S = ১ mm ধরা হয় (কারণ অপশনগুলো 0.01 এ শেষ হচ্ছে, যা সাধারণত মিলিমিটারে হয়), তাহলে:<br>Vc = ০.০১ &times; ১ mm = ০.০১ mm<br><br>যদি S = ০.১ cm ধরা হয়, তাহলে:<br>Vc = ০.০১ &times; ০.১ cm = ০.০০১ cm<br><br>যেহেতু অপশনগুলো শুধুমাত্র সংখ্যায় দেওয়া আছে, এবং সাধারণত এই ধরনের প্রশ্নে S = ১ mm ধরে নেওয়া হয়, তাই ০.০১ mm সঠিক উত্তর হবে।</p><p>-- এই প্রশ্নের প্রদত্ত উত্তর (A) 0.01 mm সঠিক হলেও, অপশনে শুধু 0.01 দেওয়া হয়েছে, যা এককের উল্লেখ ছাড়া অসম্পূর্ণ।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "একটি গোলকের পরিমাপ্য ব্যাসার্ধ (২.৫ &plusmn; ০.২) cm হলে এর আয়তন পরিমাপের শতকরা ত্রুটি কত?",
+          options: {
+            A: "0.24%",
+            B: "24.00%",
+            C: "0.08%",
+            D: "8.00%",
+          },
+          correct: "B",
+          explanation:
+            "<p>গোলকের আয়তন (V) এর সূত্র হলো: V = (৪/৩)&pi;r&sup3;<br>আয়তন পরিমাপে শতকরা ত্রুটি নির্ণয়ের জন্য, ব্যাসার্ধের শতকরা ত্রুটি নির্ণয় করতে হবে প্রথমে।<br><br>দেওয়া আছে, গোলকের পরিমাপ্য ব্যাসার্ধ (r) = ২.৫ cm<br>ব্যাসার্ধের পরম ত্রুটি (&Delta;r) = ০.২ cm<br><br>ব্যাসার্ধের আপেক্ষিক ত্রুটি = &Delta;r / r = ০.২ / ২.৫<br>ব্যাসার্ধের আপেক্ষিক ত্রুটি = ০.০৮<br><br>ব্যাসার্ধের শতকরা ত্রুটি = (০.০৮) &times; ১০০% = ৮%<br><br>এখন, আয়তন পরিমাপে শতকরা ত্রুটি নির্ণয় করতে হবে। আয়তনের সূত্র r&sup3; থাকায়, r এর শতকরা ত্রুটিকে ৩ দিয়ে গুণ করতে হবে।<br><br>আয়তনের শতকরা ত্রুটি = ৩ &times; (ব্যাসার্ধের শতকরা ত্রুটি)<br>আয়তনের শতকরা ত্রুটি = ৩ &times; ৮%<br>আয়তনের শতকরা ত্রুটি = ২৪%<br><br>অতএব, গোলকটির আয়তন পরিমাপে শতকরা ২৪% ত্রুটি হবে।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) 0.24%: এটি ভুল।</li><li>B) 24.00%: এটি সঠিক।</li><li>C) 0.08%: এটি ব্যাসার্ধের আপেক্ষিক ত্রুটি, শতকরা নয়।</li><li>D) 8.00%: এটি ব্যাসার্ধের শতকরা ত্রুটি, আয়তনের নয়।</li></ul>",
+        },
+        {
+          id: 25,
+          question:
+            "দুটি রোধের মান, R<sub>1</sub> = (৮ &plusmn; ০.৫) &Omega; এবং R<sub>2</sub> = (১২ &plusmn; ০.৫) &Omega;। রোধগুলোকে শ্রেণি সমবায় যুক্ত করলে শতকরা ত্রুটিসহ তুল্য রোধ কত?",
+          options: {
+            A: "20 &plusmn; 0.5% &Omega;",
+            B: "20 &plusmn; 6.25% &Omega;",
+            C: "20 &plusmn; 5% &Omega;",
+            D: "20 &plusmn; 10% &Omega;",
+          },
+          correct: "D",
+          explanation:
+            "<p>শ্রেণি সমবায়ে তুল্য রোধ (R<sub>eq</sub>) নির্ণয়ের সূত্র হলো:<br>R<sub>eq</sub> = R<sub>1</sub> + R<sub>2</sub><br><br>এখানে,<br>R<sub>1</sub> = ৮ &Omega;<br>R<sub>2</sub> = ১২ &Omega;<br><br>তুল্য রোধের গড় মান:<br>R<sub>eq</sub> = ৮ + ১২ = ২০ &Omega;<br><br>শ্রেণি সমবায়ে রোধের ত্রুটি নির্ণয়ের ক্ষেত্রে, পরম ত্রুটি সরাসরি যোগ হয়:<br>&Delta;R<sub>eq</sub> = &Delta;R<sub>1</sub> + &Delta;R<sub>2</sub><br>&Delta;R<sub>eq</sub> = ০.৫ &Omega; + ০.৫ &Omega; = ১.০ &Omega;<br><br>এখন, তুল্য রোধের শতকরা ত্রুটি নির্ণয় করি:<br>শতকরা ত্রুটি = (&Delta;R<sub>eq</sub> / R<sub>eq</sub>) &times; ১০০%<br>শতকরা ত্রুটি = (১.০ / ২০) &times; ১০০%<br>শতকরা ত্রুটি = ০.০৫ &times; ১০০%<br>শতকরা ত্রুটি = ৫%<br><br>সুতরাং, রোধগুলোকে শ্রেণি সমবায়ে যুক্ত করলে শতকরা ত্রুটিসহ তুল্য রোধ হবে (২০ &plusmn; ৫%) &Omega;।</p><p>-- এই প্রশ্নের প্রদত্ত উত্তর (D) 20 &plusmn; 10% &Omega; ভুল। সঠিক উত্তর হবে (20 &plusmn; 5%) &Omega;।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "অভিকর্ষজ ত্বরণ নির্ণয়ের জন্য আমরা রাশিমালা পাই g=4&pi;<sup>2</sup>l/T<sup>2</sup>। g নির্ণয়ের আনুপাতিক ত্রুটি নির্ণয়ের রাশিমালা হবে-",
+          options: {
+            A: "&Delta;g/g = &Delta;l/l + 2&Delta;T/T",
+            B: "&Delta;g/g = &Delta;l/l + (&Delta;T/T)&sup2;",
+            C: "&Delta;g/g = &Delta;l/l + 2(&Delta;T/T)",
+            D: "&Delta;g/g = &Delta;l/l + 2&Delta;T/T&sup2;",
+          },
+          correct: "A",
+          explanation:
+            "<p>যখন দুটি রাশি গুণ বা ভাগ আকারে থাকে, তখন তাদের আনুপাতিক ত্রুটিগুলো যোগ করা হয়। যদি কোনো রাশির ঘাত থাকে, তবে সেই ঘাত দিয়ে আনুপাতিক ত্রুটিকে গুণ করতে হয়।<br><br>দেওয়া আছে: g = (৪&pi;<sup>2</sup>l) / T<sup>2</sup><br><br>এখানে, ৪&pi;<sup>2</sup> একটি ধ্রুবক, তাই এর কোনো ত্রুটি থাকে না।<br>l এর আনুপাতিক ত্রুটি হলো &Delta;l/l<br>T এর আনুপাতিক ত্রুটি হলো &Delta;T/T<br><br>যেহেতু T<sup>2</sup> হরে আছে, এবং এর ঘাত ২, তাই এর আনুপাতিক ত্রুটি হবে ২&Delta;T/T। ভাগের ক্ষেত্রেও ত্রুটি যোগ হয়।<br><br>সুতরাং, g নির্ণয়ের আনুপাতিক ত্রুটি (&Delta;g/g) = (&Delta;l/l) + (২&Delta;T/T)<br>&Delta;g/g = &Delta;l/l + 2&Delta;T/T<br><br>এই সূত্রটি ত্রুটি বিশ্লেষণের ক্ষেত্রে খুবই গুরুত্বপূর্ণ এবং পদার্থবিজ্ঞানের বিভিন্ন পরিমাপে ব্যবহৃত হয়।</p><p>বিভিন্ন অপশনগুলোর ব্যাখ্যা নিচে দেওয়া হলো:</p><ul><li>A) &Delta;g/g = &Delta;l/l + 2&Delta;T/T: এটি সঠিক।</li><li>B) &Delta;g/g = &Delta;l/l + (&Delta;T/T)&sup2;: এটি ভুল, ঘাতটি আপেক্ষিক ত্রুটির উপর বসে না।</li><li>C) &Delta;g/g = &Delta;l/l + 2(&Delta;T/T): এটি A এর সাথে একই, তবে ব্র্যাকেট ব্যবহারের কারণে সামান্য ভিন্ন দেখাচ্ছে।</li><li>D) &Delta;g/g = &Delta;l/l + 2&Delta;T/T&sup2;: এটি ভুল, T এর ঘাত ত্রুটির সূত্রে হরে আসবে না।</li></ul>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                <label class="option" data-option="${option}">
+                                  <div class="circle">${option}</div>
+                                  <span class="option-text">${question.options[option]}</span>
+                                </label>
+                              `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                   <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                   <div class="explanation-content">
+                                     <div class="explanation-label">ব্যাখ্যা:</div>
+                                     ${question.explanation}
+                                   </div>
+                                 </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                              <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                              <div class="options">
+                                ${optionsHTML}
+                              </div>
+                              ${explanationHTML}
+                            `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
